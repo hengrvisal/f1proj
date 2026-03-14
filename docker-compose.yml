@@ -1,0 +1,28 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: f1db
+    environment:
+      POSTGRES_USER: f1user
+      POSTGRES_PASSWORD: f1password
+      POSTGRES_DB: f1db
+    ports:
+      - "5432:5432"
+    volumes:
+      - f1_pgdata:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: f1pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  f1_pgdata:
