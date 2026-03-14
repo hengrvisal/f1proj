@@ -11,6 +11,15 @@ services:
     volumes:
       - f1_pgdata:/var/lib/postgresql/data
 
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.10.2
+    container_name: f1mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - f1_mlflow:/mlflow
+    command: mlflow server --host 0.0.0.0 --backend-store-uri sqlite:///mlflow/mlflow.db --default-artifact-root /mlflow/artifacts
+
   pgadmin:
     image: dpage/pgadmin4
     container_name: f1pgadmin
@@ -26,3 +35,4 @@ services:
 
 volumes:
   f1_pgdata:
+  f1_mlflow:

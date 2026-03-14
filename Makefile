@@ -1,4 +1,4 @@
-.PHONY: db-up db-down migrate ingest ingest-no-telemetry test
+.PHONY: db-up db-down migrate ingest ingest-no-telemetry test api ml frontend
 
 db-up:
 	docker compose up -d
@@ -20,3 +20,9 @@ test:
 
 api:
 	uvicorn backend.api.main:app --reload
+
+ml:
+	python -m backend.ml.run_features --all
+
+frontend:
+	cd frontend && npm run dev

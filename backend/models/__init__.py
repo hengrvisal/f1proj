@@ -15,6 +15,12 @@ from backend.models.weather import Weather
 from backend.models.telemetry_sample import TelemetrySample
 from backend.models.race_control_message import RaceControlMessage
 from backend.models.team_radio import TeamRadio
+from backend.models.circuit_corner import CircuitCorner
+from backend.models.driver_corner_stat import DriverCornerStat
+from backend.models.driver_dna_feature import DriverDnaFeature
+from backend.models.driver_similarity import DriverSimilarity
+from backend.models.tyre_deg_curve import TyreDegCurve
+from backend.models.ml_run import MlRun
 
 __all__ = [
     "Base",
@@ -34,4 +40,10 @@ __all__ = [
     "TelemetrySample",
     "RaceControlMessage",
     "TeamRadio",
+    "CircuitCorner",
+    "DriverCornerStat",
+    "DriverDnaFeature",
+    "DriverSimilarity",
+    "TyreDegCurve",
+    "MlRun",
 ]
