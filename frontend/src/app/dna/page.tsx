@@ -7,16 +7,20 @@ import ClusterScatterPlot from "@/components/ClusterScatterPlot";
 import SimilarityHeatmap from "@/components/SimilarityHeatmap";
 import RadarChart from "@/components/RadarChart";
 import { CLUSTER_COLORS } from "@/lib/teams";
+import AIAnalysisPanel from "@/components/AIAnalysisPanel";
 
 export default function DnaPage() {
   const [season, setSeason] = useState(2024);
   const [selectedDriver, setSelectedDriver] = useState<ClusterDriver | null>(null);
   const [colorBy, setColorBy] = useState<"team" | "cluster">("team");
 
-  const { data: clusters, isLoading } = useQuery({
+  const { data: clustersData, isLoading } = useQuery({
     queryKey: ["dna-clusters", season],
     queryFn: () => api.dnaClusters(season),
   });
+
+  const clusters = clustersData?.drivers;
+  const pcaInfo = clustersData?.pca_info;
 
   const { data: similarity } = useQuery({
     queryKey: ["dna-similarity", season],
@@ -37,12 +41,16 @@ export default function DnaPage() {
     );
   }
 
-  // Group clusters for cards
+  // Group clusters for cards (exclude "Insufficient Data" drivers)
   const clusterGroups = new Map<number, ClusterDriver[]>();
   for (const d of clusters ?? []) {
+    if (d.cluster_id < 0) continue;
     if (!clusterGroups.has(d.cluster_id)) clusterGroups.set(d.cluster_id, []);
     clusterGroups.get(d.cluster_id)!.push(d);
   }
+
+  // Insufficient data drivers
+  const insufficientDrivers = (clusters ?? []).filter((d) => d.cluster_id < 0);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -78,6 +86,7 @@ export default function DnaPage() {
           <ClusterScatterPlot
             drivers={clusters}
             colorBy={colorBy}
+            pcaInfo={pcaInfo}
             onDriverClick={setSelectedDriver}
           />
         )}
@@ -96,11 +105,15 @@ export default function DnaPage() {
               style={{
                 backgroundColor:
                   CLUSTER_COLORS[
-                    selectedDriver.cluster_id % CLUSTER_COLORS.length
+                    selectedDriver.cluster_id >= 0
+                      ? selectedDriver.cluster_id % CLUSTER_COLORS.length
+                      : 0
                   ] + "22",
                 color:
                   CLUSTER_COLORS[
-                    selectedDriver.cluster_id % CLUSTER_COLORS.length
+                    selectedDriver.cluster_id >= 0
+                      ? selectedDriver.cluster_id % CLUSTER_COLORS.length
+                      : 0
                   ],
               }}
             >
@@ -159,6 +172,8 @@ export default function DnaPage() {
               </div>
             </div>
           </div>
+
+          <AIAnalysisPanel driverId={selectedDriver.driver_id} season={season} />
         </div>
       )}
 
@@ -193,6 +208,29 @@ export default function DnaPage() {
             </div>
           </div>
         ))}
+
+        {/* Insufficient Data card */}
+        {insufficientDrivers.length > 0 && (
+          <div className="bg-card rounded-xl border border-border p-5 opacity-60">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-3 h-3 rounded-full bg-gray-500" />
+              <h3 className="font-semibold">Insufficient Data</h3>
+              <span className="text-sm text-muted">
+                ({insufficientDrivers.length})
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {insufficientDrivers.map((d) => (
+                <span
+                  key={d.driver_id}
+                  className="px-2 py-1 text-sm bg-background rounded-md text-muted"
+                >
+                  {d.code}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Similarity Heatmap */}

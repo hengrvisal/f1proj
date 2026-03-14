@@ -19,6 +19,13 @@ export interface Driver {
   cluster_label: string | null;
 }
 
+export interface PcaInfo {
+  pc1_variance: number;
+  pc2_variance: number;
+  pc1_features: string[];
+  pc2_features: string[];
+}
+
 export interface ClusterDriver {
   driver_id: number;
   code: string;
@@ -32,6 +39,11 @@ export interface ClusterDriver {
   tsne_x: number;
   tsne_y: number;
   features: Record<string, number>;
+}
+
+export interface ClustersResponse {
+  drivers: ClusterDriver[];
+  pca_info: PcaInfo | null;
 }
 
 export interface SimilarityMatrix {
@@ -118,13 +130,22 @@ export interface Corner {
   corner_type: string;
 }
 
+export interface DriverAIAnalysis {
+  confidence: number;
+  confidenceVerdict: string;
+  style: string;
+  strengths: string;
+  areas: string;
+  verdict: string;
+}
+
 // API functions
 export const api = {
   drivers: (season?: number) =>
     fetchApi<Driver[]>(`/api/drivers${season ? `?season=${season}` : ""}`),
 
   dnaClusters: (season: number) =>
-    fetchApi<ClusterDriver[]>(`/api/dna/clusters?season=${season}`),
+    fetchApi<ClustersResponse>(`/api/dna/clusters?season=${season}`),
 
   dnaSimilarity: (season: number) =>
     fetchApi<SimilarityMatrix>(`/api/dna/similarity?season=${season}`),
@@ -166,4 +187,12 @@ export const api = {
     fetchApi<{ corners: Corner[] }>(`/api/circuits/${circuitId}/corners`),
 
   races: (season: number) => fetchApi<Race[]>(`/api/races?season=${season}`),
+
+  aiAnalyseDriver: async (driverId: number, season: number): Promise<DriverAIAnalysis> => {
+    const res = await fetch(`${API_BASE}/api/ai/analyse-driver?driver_id=${driverId}&season=${season}`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
+    return res.json();
+  },
 };
