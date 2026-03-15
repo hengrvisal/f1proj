@@ -9,35 +9,73 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  Label,
 } from "recharts";
-import { ClusterDriver } from "@/lib/api";
+import { ClusterDriver, PcaInfo } from "@/lib/api";
 import { getTeamColor, CLUSTER_COLORS } from "@/lib/teams";
+
+const FEATURE_DISPLAY: Record<string, string> = {
+  brake_aggression: "Brake Aggression",
+  corner_entry_speed: "Corner Entry Speed",
+  corner_exit_efficiency: "Exit Efficiency",
+  throttle_application: "Throttle Application",
+  tyre_management: "Tyre Management",
+  quali_vs_race: "Quali vs Race",
+  overtake_aggression: "Overtake Aggression",
+  consistency: "Consistency",
+  avg_corner_time_delta: "Corner Time Delta",
+  gear_usage_style: "Gear Usage",
+};
+
+function formatFeatureName(f: string): string {
+  return FEATURE_DISPLAY[f] || f.replace(/_/g, " ");
+}
+
+function formatAxisLabel(axis: "pc1" | "pc2", pcaInfo: PcaInfo | null): string {
+  if (!pcaInfo) return axis === "pc1" ? "PC1" : "PC2";
+  const variance = axis === "pc1" ? pcaInfo.pc1_variance : pcaInfo.pc2_variance;
+  const features = axis === "pc1" ? pcaInfo.pc1_features : pcaInfo.pc2_features;
+  const featureStr = features.map(formatFeatureName).join(", ");
+  return `${axis.toUpperCase()} (${variance}% — ${featureStr})`;
+}
 
 interface Props {
   drivers: ClusterDriver[];
   colorBy?: "team" | "cluster";
+  pcaInfo?: PcaInfo | null;
   onDriverClick?: (driver: ClusterDriver) => void;
 }
 
 export default function ClusterScatterPlot({
   drivers,
   colorBy = "team",
+  pcaInfo,
   onDriverClick,
 }: Props) {
   const [mode, setMode] = useState<"pca" | "tsne">("pca");
 
-  const data = drivers.map((d) => ({
+  // Filter out drivers with no coordinates (insufficient data)
+  const validDrivers = drivers.filter(
+    (d) => d.pca_x != null && d.pca_y != null
+  );
+
+  const data = validDrivers.map((d) => ({
     ...d,
     x: mode === "pca" ? d.pca_x : d.tsne_x,
     y: mode === "pca" ? d.pca_y : d.tsne_y,
   }));
 
-  // Group by cluster for hull rendering
+  // Group by cluster for legend
   const clusters = new Map<number, typeof data>();
   for (const d of data) {
     if (!clusters.has(d.cluster_id)) clusters.set(d.cluster_id, []);
     clusters.get(d.cluster_id)!.push(d);
   }
+
+  const xLabel =
+    mode === "pca" ? formatAxisLabel("pc1", pcaInfo ?? null) : "t-SNE 1";
+  const yLabel =
+    mode === "pca" ? formatAxisLabel("pc2", pcaInfo ?? null) : "t-SNE 2";
 
   return (
     <div>
@@ -63,26 +101,39 @@ export default function ClusterScatterPlot({
         >
           t-SNE
         </button>
-        <span className="ml-4 text-sm text-muted">Color:</span>
-        {/* Color toggle handled by parent via colorBy prop */}
       </div>
 
       <ResponsiveContainer width="100%" height={500}>
-        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+        <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 20 }}>
           <XAxis
             type="number"
             dataKey="x"
-            name={mode === "pca" ? "PC1" : "t-SNE 1"}
+            name={xLabel}
             tick={{ fill: "#888899", fontSize: 12 }}
             axisLine={{ stroke: "#2a2a3a" }}
-          />
+          >
+            <Label
+              value={xLabel}
+              position="bottom"
+              offset={15}
+              style={{ fill: "#888899", fontSize: 12 }}
+            />
+          </XAxis>
           <YAxis
             type="number"
             dataKey="y"
-            name={mode === "pca" ? "PC2" : "t-SNE 2"}
+            name={yLabel}
             tick={{ fill: "#888899", fontSize: 12 }}
             axisLine={{ stroke: "#2a2a3a" }}
-          />
+          >
+            <Label
+              value={yLabel}
+              angle={-90}
+              position="left"
+              offset={0}
+              style={{ fill: "#888899", fontSize: 12 }}
+            />
+          </YAxis>
           <Tooltip
             content={({ payload }) => {
               if (!payload?.length) return null;

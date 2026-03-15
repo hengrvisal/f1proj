@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/dna", tags=["driver-dna"])
 
 @router.get("/clusters")
 def get_clusters(season: int = Query(...), db: Session = Depends(get_db)):
-    """Cluster assignments, PCA/t-SNE coords, feature vectors."""
+    """Cluster assignments, PCA/t-SNE coords, feature vectors, and PCA metadata."""
     rows = db.execute(text("""
         SELECT DISTINCT ON (d.id)
                d.id, d.code, d.first_name, d.last_name,
@@ -31,20 +31,30 @@ def get_clusters(season: int = Query(...), db: Session = Depends(get_db)):
         ORDER BY d.id, r.round_number DESC
     """), {"year": season}).fetchall()
 
-    return [
-        {
+    # Extract PCA info from the first record that has it
+    pca_info = None
+    drivers = []
+    for r in rows:
+        features = json.loads(r[11]) if r[11] else {}
+        if "_pca_info" in features:
+            pca_info = features.pop("_pca_info")
+
+        drivers.append({
             "driver_id": r[0], "code": r[1], "first_name": r[2], "last_name": r[3],
             "team": r[4], "cluster_id": r[5], "cluster_label": r[6],
             "pca_x": r[7], "pca_y": r[8], "tsne_x": r[9], "tsne_y": r[10],
-            "features": json.loads(r[11]) if r[11] else {},
-        }
-        for r in rows
-    ]
+            "features": features,
+        })
+
+    return {
+        "drivers": drivers,
+        "pca_info": pca_info,
+    }
 
 
 @router.get("/similarity")
 def get_similarity(season: int = Query(...), db: Session = Depends(get_db)):
-    """n×n similarity matrix."""
+    """n*n similarity matrix."""
     rows = db.execute(text("""
         SELECT da.code as driver_a, db.code as driver_b,
                ds.cosine_similarity
@@ -85,6 +95,7 @@ def compare_drivers(
     result = []
     for r in rows:
         features = json.loads(r[2]) if r[2] else {}
+        features.pop("_pca_info", None)
         result.append({"driver_id": r[0], "code": r[1], "features": features})
 
     # Get similarity between them
@@ -117,6 +128,9 @@ def get_driver_dna(
     if not dna:
         return {"error": "No DNA data found"}
 
+    features = json.loads(dna[0]) if dna[0] else {}
+    features.pop("_pca_info", None)
+
     # Most similar
     most_similar = db.execute(text("""
         SELECT d.id, d.code, ds.cosine_similarity
@@ -148,7 +162,7 @@ def get_driver_dna(
     """), {"year": season, "did": driver_id}).fetchall()
 
     return {
-        "features": json.loads(dna[0]) if dna[0] else {},
+        "features": features,
         "cluster_id": dna[1],
         "cluster_label": dna[2],
         "pca_x": dna[3], "pca_y": dna[4],
