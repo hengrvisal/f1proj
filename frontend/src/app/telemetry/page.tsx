@@ -9,6 +9,16 @@ import GearTrace from "@/components/GearTrace";
 import TrackMap from "@/components/TrackMap";
 import { getTeamColor } from "@/lib/teams";
 
+const SESSION_LABELS: Record<string, string> = {
+  R: "Race",
+  Q: "Qualifying",
+  S: "Sprint",
+  SQ: "Sprint Qualifying",
+  FP1: "Practice 1",
+  FP2: "Practice 2",
+  FP3: "Practice 3",
+};
+
 export default function TelemetryPage() {
   const [season, setSeason] = useState(2024);
   const [raceId, setRaceId] = useState<number | null>(null);
@@ -61,7 +71,10 @@ export default function TelemetryPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold">Telemetry Explorer</h1>
+      <div>
+        <h1 className="text-3xl font-bold">Telemetry Explorer</h1>
+        <p className="text-muted mt-1">Compare speed, throttle, brake, and gear traces between drivers</p>
+      </div>
 
       {/* Selectors */}
       <div className="flex flex-wrap items-center gap-3">
@@ -96,7 +109,7 @@ export default function TelemetryPage() {
             <option value="">Select Session</option>
             {selectedRace.sessions.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.type}
+                {SESSION_LABELS[s.type] ?? s.type}
               </option>
             ))}
           </select>
@@ -132,14 +145,33 @@ export default function TelemetryPage() {
       </div>
 
       {!sessionId && (
-        <div className="text-muted py-12 text-center">Select a race and session to view telemetry</div>
+        <div className="bg-card rounded-xl border border-border p-12 text-center">
+          <p className="text-muted">Select a race and session above to compare driver telemetry</p>
+        </div>
+      )}
+
+      {sessionId && !hasValidSelection && !isLoading && telemetryDrivers && telemetryDrivers.length > 0 && (
+        <div className="bg-card rounded-xl border border-border p-12 text-center">
+          <p className="text-muted">Select two drivers above to compare their telemetry</p>
+        </div>
       )}
 
       {sessionId && telemetryDrivers && telemetryDrivers.length === 0 && (
-        <div className="text-muted py-12 text-center">No telemetry data available for this session</div>
+        <div className="bg-card rounded-xl border border-border p-12 text-center">
+          <p className="text-muted">No telemetry data available for this session</p>
+        </div>
       )}
 
-      {isLoading && <div className="text-muted py-8 text-center">Loading telemetry...</div>}
+      {isLoading && (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-card rounded-xl border border-border p-4">
+              <div className="animate-pulse bg-border rounded h-4 w-24 mb-3" />
+              <div className="animate-pulse bg-border rounded-lg h-48" />
+            </div>
+          ))}
+        </div>
+      )}
 
       {comparison?.error && (
         <div className="text-amber-400 py-8 text-center">{comparison.error}</div>

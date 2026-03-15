@@ -40,7 +40,7 @@ export default function ComparePage() {
   });
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Driver Comparison</h1>
         <p className="text-muted mt-1">Head-to-head DNA feature comparison</p>
@@ -84,6 +84,12 @@ export default function ComparePage() {
           ))}
         </select>
       </div>
+
+      {(!driverA || !driverB || driverA === driverB) && (
+        <div className="bg-card rounded-xl border border-border p-12 text-center">
+          <p className="text-muted">Select two drivers above to compare their DNA profiles</p>
+        </div>
+      )}
 
       {comparison && comparison.drivers.length === 2 && (
         <>

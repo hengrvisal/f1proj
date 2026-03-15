@@ -37,7 +37,10 @@ export default function TyresPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold">Tyre Degradation</h1>
+      <div>
+        <h1 className="text-3xl font-bold">Tyre Degradation</h1>
+        <p className="text-muted mt-1">Degradation curves, stint strategies, and compound analysis</p>
+      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <select
@@ -83,7 +86,24 @@ export default function TyresPage() {
         )}
       </div>
 
-      {isLoading && <div className="text-muted py-8 text-center">Loading tyre data...</div>}
+      {!sessionId && (
+        <div className="bg-card rounded-xl border border-border p-12 text-center">
+          <p className="text-muted">Select a race to view tyre degradation analysis</p>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="space-y-4">
+          <div className="bg-card rounded-xl border border-border p-6">
+            <div className="animate-pulse bg-border rounded h-5 w-40 mb-4" />
+            <div className="animate-pulse bg-border rounded-lg h-48" />
+          </div>
+          <div className="bg-card rounded-xl border border-border p-6">
+            <div className="animate-pulse bg-border rounded h-5 w-40 mb-4" />
+            <div className="animate-pulse bg-border rounded-lg h-48" />
+          </div>
+        </div>
+      )}
 
       {/* Stint Timeline */}
       {strategies && strategies.length > 0 && (

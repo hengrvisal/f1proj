@@ -10,7 +10,7 @@ export default function Home() {
         Machine learning insights from 2023–2024 Formula 1 telemetry data
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Link
           href="/dna"
           className="p-6 bg-card rounded-xl border border-border hover:border-accent/50 transition-colors group"
@@ -64,6 +64,32 @@ export default function Home() {
           <p className="text-muted text-sm">
             Browse the 2023–2024 season calendar and explore available session
             data.
+          </p>
+        </Link>
+
+        <Link
+          href="/drivers"
+          className="p-6 bg-card rounded-xl border border-border hover:border-accent/50 transition-colors group"
+        >
+          <div className="text-2xl mb-2">🏎️</div>
+          <h2 className="text-xl font-semibold mb-1 group-hover:text-accent transition-colors">
+            Drivers
+          </h2>
+          <p className="text-muted text-sm">
+            Browse the grid and explore driving style profiles for every driver.
+          </p>
+        </Link>
+
+        <Link
+          href="/dna/compare"
+          className="p-6 bg-card rounded-xl border border-border hover:border-accent/50 transition-colors group"
+        >
+          <div className="text-2xl mb-2">⚡</div>
+          <h2 className="text-xl font-semibold mb-1 group-hover:text-accent transition-colors">
+            Compare
+          </h2>
+          <p className="text-muted text-sm">
+            Head-to-head DNA feature comparison between any two drivers.
           </p>
         </Link>
       </div>

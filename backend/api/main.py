@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from backend.api.routers import ai_analysis, circuits, driver_dna, drivers, races, telemetry, tyre_deg
+from backend.api.routers import ai_analysis, circuits, driver_dna, drivers, races, season_metrics, telemetry, tyre_deg
 from backend.database import engine
 
 app = FastAPI(title="F1 AI Platform", version="0.2.0")
@@ -24,6 +24,7 @@ app.include_router(telemetry.router)
 app.include_router(tyre_deg.router)
 app.include_router(circuits.router)
 app.include_router(races.router)
+app.include_router(season_metrics.router)
 
 
 @app.get("/health")

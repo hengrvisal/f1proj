@@ -130,6 +130,29 @@ export interface Corner {
   corner_type: string;
 }
 
+export interface SeasonMetricRow {
+  driver: string;
+  race_round: number;
+  race_name: string;
+  season: number;
+  consistency: number | null;
+  entry_speed: number | null;
+  throttle_application: number | null;
+  overtake_rate: number | null;
+  tyre_management: number | null;
+  quali_proxy: number | null;
+  consistency_raw: number | null;
+  entry_speed_raw: number | null;
+  throttle_application_raw: number | null;
+  overtake_rate_raw: number | null;
+  overtake_passes: number | null;
+  tyre_management_raw: number | null;
+  quali_proxy_raw: number | null;
+  lap_count: number;
+  had_dnf: boolean;
+  had_safety_car: boolean;
+}
+
 export interface DriverAIAnalysis {
   confidence: number;
   confidenceVerdict: string;
@@ -187,6 +210,12 @@ export const api = {
     fetchApi<{ corners: Corner[] }>(`/api/circuits/${circuitId}/corners`),
 
   races: (season: number) => fetchApi<Race[]>(`/api/races?season=${season}`),
+
+  seasonMetrics: (driverCode: string, season: number) =>
+    fetchApi<SeasonMetricRow[]>(`/api/season-metrics?driver=${driverCode}&season=${season}`),
+
+  allSeasonMetrics: (season: number) =>
+    fetchApi<SeasonMetricRow[]>(`/api/season-metrics?season=${season}`),
 
   aiAnalyseDriver: async (driverId: number, season: number): Promise<DriverAIAnalysis> => {
     const res = await fetch(`${API_BASE}/api/ai/analyse-driver?driver_id=${driverId}&season=${season}`, {

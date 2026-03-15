@@ -14,6 +14,44 @@ import {
 import { ClusterDriver, PcaInfo } from "@/lib/api";
 import { getTeamColor, CLUSTER_COLORS } from "@/lib/teams";
 
+// Map feature keys to plain-English pole descriptions [low ←, → high]
+const FEATURE_POLES: Record<string, [string, string]> = {
+  brake_aggression: ["Gentle braking", "Aggressive braking"],
+  corner_entry_speed: ["Cautious entry", "Fast entry"],
+  corner_exit_efficiency: ["Low exit speed", "High exit speed"],
+  throttle_application: ["Gradual throttle", "Aggressive throttle"],
+  tyre_management: ["Hard on tyres", "Easy on tyres"],
+  quali_vs_race: ["Race-focused", "Quali-focused"],
+  overtake_aggression: ["Patient overtaker", "Aggressive overtaker"],
+  consistency: ["Variable", "Consistent"],
+  avg_corner_time_delta: ["Slow through corners", "Fast through corners"],
+  gear_usage_style: ["Conservative gears", "Aggressive gears"],
+  brake_point_rel_mean: ["Early braker", "Late braker"],
+  brake_point_rel_std: ["Variable braking", "Consistent braking"],
+  corner_entry_speed_rel: ["Cautious entry", "Fast entry"],
+  corner_apex_speed_rel: ["Low apex speed", "High apex speed"],
+  corner_exit_speed_rel: ["Low exit speed", "High exit speed"],
+  throttle_delay_after_apex: ["Early throttle", "Late throttle"],
+  trail_braking_score: ["Low trail braking", "High trail braking"],
+  slow_corner_speed: ["Slow in tight turns", "Fast in tight turns"],
+  medium_corner_speed: ["Slow in medium turns", "Fast in medium turns"],
+  fast_corner_speed: ["Slow in fast turns", "Fast in fast turns"],
+  avg_tyre_deg_rate: ["Hard on tyres", "Easy on tyres"],
+  quali_race_pace_delta: ["Race-focused", "Quali-focused"],
+  wet_performance_delta: ["Weaker in wet", "Stronger in wet"],
+  consistency_score: ["Variable", "Consistent"],
+};
+
+function getAxisPoles(axis: "pc1" | "pc2", pcaInfo: PcaInfo | null): { low: string; high: string } | null {
+  if (!pcaInfo) return null;
+  const features = axis === "pc1" ? pcaInfo.pc1_features : pcaInfo.pc2_features;
+  if (!features.length) return null;
+  const topFeature = features[0];
+  const poles = FEATURE_POLES[topFeature];
+  if (!poles) return null;
+  return { low: poles[0], high: poles[1] };
+}
+
 const FEATURE_DISPLAY: Record<string, string> = {
   brake_aggression: "Brake Aggression",
   corner_entry_speed: "Corner Entry Speed",
@@ -25,18 +63,25 @@ const FEATURE_DISPLAY: Record<string, string> = {
   consistency: "Consistency",
   avg_corner_time_delta: "Corner Time Delta",
   gear_usage_style: "Gear Usage",
+  brake_point_rel_mean: "Late Braking",
+  brake_point_rel_std: "Braking Consistency",
+  corner_entry_speed_rel: "Entry Speed",
+  corner_apex_speed_rel: "Apex Speed",
+  corner_exit_speed_rel: "Exit Speed",
+  throttle_delay_after_apex: "Throttle Application",
+  trail_braking_score: "Trail Braking",
+  slow_corner_speed: "Slow Corners",
+  medium_corner_speed: "Medium Corners",
+  fast_corner_speed: "Fast Corners",
+  avg_tyre_deg_rate: "Tyre Management",
+  quali_race_pace_delta: "Quali vs Race",
+  consistency_score: "Consistency",
+  wet_performance_delta: "Wet Performance",
+  overtake_aggression_raw: "Aggression",
 };
 
 function formatFeatureName(f: string): string {
   return FEATURE_DISPLAY[f] || f.replace(/_/g, " ");
-}
-
-function formatAxisLabel(axis: "pc1" | "pc2", pcaInfo: PcaInfo | null): string {
-  if (!pcaInfo) return axis === "pc1" ? "PC1" : "PC2";
-  const variance = axis === "pc1" ? pcaInfo.pc1_variance : pcaInfo.pc2_variance;
-  const features = axis === "pc1" ? pcaInfo.pc1_features : pcaInfo.pc2_features;
-  const featureStr = features.map(formatFeatureName).join(", ");
-  return `${axis.toUpperCase()} (${variance}% — ${featureStr})`;
 }
 
 interface Props {
@@ -72,10 +117,8 @@ export default function ClusterScatterPlot({
     clusters.get(d.cluster_id)!.push(d);
   }
 
-  const xLabel =
-    mode === "pca" ? formatAxisLabel("pc1", pcaInfo ?? null) : "t-SNE 1";
-  const yLabel =
-    mode === "pca" ? formatAxisLabel("pc2", pcaInfo ?? null) : "t-SNE 2";
+  const xPoles = mode === "pca" ? getAxisPoles("pc1", pcaInfo ?? null) : null;
+  const yPoles = mode === "pca" ? getAxisPoles("pc2", pcaInfo ?? null) : null;
 
   return (
     <div>
@@ -101,39 +144,50 @@ export default function ClusterScatterPlot({
         >
           t-SNE
         </button>
+        <span className="text-xs text-muted/60 ml-1">
+          {mode === "pca"
+            ? "Axes show what separates drivers — position tells you why"
+            : "Optimized for clusters — nearby drivers have similar styles"}
+        </span>
       </div>
 
+      {/* Pole labels for PCA mode */}
+      {mode === "pca" && xPoles && (
+        <div className="flex justify-between text-xs text-muted mb-1 px-12">
+          <span>← {xPoles.low}</span>
+          <span>{xPoles.high} →</span>
+        </div>
+      )}
+
+      <div className="relative">
+        {/* Y-axis pole labels */}
+        {mode === "pca" && yPoles && (
+          <>
+            <div className="absolute left-0 top-2 text-xs text-muted writing-mode-vertical" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+              ← {yPoles.low}
+            </div>
+            <div className="absolute left-0 bottom-10 text-xs text-muted writing-mode-vertical" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+              {yPoles.high} →
+            </div>
+          </>
+        )}
+
       <ResponsiveContainer width="100%" height={500}>
-        <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 20 }}>
+        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
           <XAxis
             type="number"
             dataKey="x"
-            name={xLabel}
             tick={{ fill: "#888899", fontSize: 12 }}
             axisLine={{ stroke: "#2a2a3a" }}
-          >
-            <Label
-              value={xLabel}
-              position="bottom"
-              offset={15}
-              style={{ fill: "#888899", fontSize: 12 }}
-            />
-          </XAxis>
+            tickLine={false}
+          />
           <YAxis
             type="number"
             dataKey="y"
-            name={yLabel}
             tick={{ fill: "#888899", fontSize: 12 }}
             axisLine={{ stroke: "#2a2a3a" }}
-          >
-            <Label
-              value={yLabel}
-              angle={-90}
-              position="left"
-              offset={0}
-              style={{ fill: "#888899", fontSize: 12 }}
-            />
-          </YAxis>
+            tickLine={false}
+          />
           <Tooltip
             content={({ payload }) => {
               if (!payload?.length) return null;
@@ -170,6 +224,7 @@ export default function ClusterScatterPlot({
           </Scatter>
         </ScatterChart>
       </ResponsiveContainer>
+      </div>
 
       {/* Cluster legend */}
       <div className="flex flex-wrap gap-4 mt-4">
